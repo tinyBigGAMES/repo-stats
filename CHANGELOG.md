@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Changed
+- **Merge branch 'main' of https://github.com/tinyBigGAMES/repo-stats** (2025-10-15 – jarroddavis68)
+
+- **Update LICENSE** (2025-10-15 – jarroddavis68)
+
 - **Repo Update** (2025-10-15 – jarroddavis68)
   - Initial commit
 
