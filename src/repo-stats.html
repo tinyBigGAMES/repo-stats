@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repository Stats - Full Analytics</title>
+    <link rel="icon" type="image/x-icon" href="repo-stats.ico">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #4a5fd9 0%, #5a3a7a 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .rate-limit-info {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            margin-top: 15px;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+
+        .rate-limit-warning {
+            background: rgba(255, 152, 0, 0.9) !important;
+            animation: pulse 2s infinite;
+        }
+
+        .rate-limit-danger {
+            background: rgba(255, 68, 68, 0.9) !important;
+            animation: pulse 1s infinite;
+        }
+
+        .cache-indicator {
+            background: #28a745;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            display: inline-block;
+            margin-left: 10px;
+            animation: fadeIn 0.3s;
+        }
+
+        .search-box {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        #refreshBtn {
+            display: none;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .repo-dropdown-container {
+            margin-top: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            animation: fadeInDown 0.3s ease-out;
+        }
+
+        .repo-select {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .repo-select:hover {
+            border-color: #667eea;
+        }
+
+        .repo-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .repo-select option {
+            padding: 10px;
+        }
+
+        .stats-container {
+            display: none;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .repo-header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .repo-title {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .repo-title a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .repo-title a:hover {
+            text-decoration: underline;
+        }
+
+        .repo-description {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+        }
+
+        .repo-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .repo-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .topics-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .topic-tag {
+            background: #e8f0fe;
+            color: #1967d2;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .stat-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: white;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .charts-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.6s ease-out 0.2s;
+            animation-fill-mode: both;
+        }
+
+        .chart-container-small {
+            max-height: 400px;
+        }
+
+        .chart-title {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .releases-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            animation: fadeInUp 0.6s ease-out 0.3s;
+            animation-fill-mode: both;
+        }
+
+        .download-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .download-card {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .download-card-value {
+            font-size: 2.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .download-card-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .release-selector {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .release-selector label {
+            font-weight: 600;
+            font-size: 16px;
+            color: #333;
+            margin-right: 10px;
+        }
+
+        .release-selector select {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            min-width: 300px;
+            transition: all 0.3s;
+        }
+
+        .release-selector select:hover {
+            border-color: #667eea;
+        }
+
+        .release-selector select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .release-display {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 25px;
+            background: white;
+        }
+
+        .release-display-header {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .release-display-title {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .release-display-meta {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .release-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 0;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+            overflow: hidden;
+        }
+
+        .release-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.1);
+        }
+
+        .release-card-header {
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            transition: background 0.3s;
+            user-select: none;
+        }
+
+        .release-card-header:hover {
+            background: #e9ecef;
+        }
+
+        .release-card-header.expanded {
+            background: #e8f0fe;
+        }
+
+        .release-header-left {
+            flex: 1;
+        }
+
+        .release-header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .release-expand-icon {
+            font-size: 24px;
+            transition: transform 0.3s;
+            color: #667eea;
+        }
+
+        .release-expand-icon.expanded {
+            transform: rotate(180deg);
+        }
+
+        .release-card-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            padding: 0 20px;
+        }
+
+        .release-card-body.expanded {
+            max-height: 2000px;
+            padding: 20px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        .release-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .release-name {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .release-summary {
+            font-size: 14px;
+            color: #666;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .release-tag {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .release-downloads-badge {
+            background: #28a745;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .release-prerelease {
+            background: #ff9800;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .release-date {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .release-body {
+            color: #555;
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .release-assets {
+            border-top: 1px solid #e0e0e0;
+            padding-top: 15px;
+            margin-top: 10px;
+        }
+
+        .asset-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .asset-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .asset-name {
+            font-weight: 500;
+            color: #333;
+            font-size: 13px;
+        }
+
+        .asset-downloads {
+            background: #28a745;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .error-message {
+            background: #ff4444;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            animation: shake 0.5s;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            padding: 40px;
+            display: none;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            padding: 30px;
+            margin-top: 50px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .badge-language {
+            background: #667eea;
+            color: white;
+        }
+
+        .badge-license {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .info-icon {
+            font-size: 18px;
+        }
+
+        .analyze-another-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+            display: none;
+            z-index: 1000;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .analyze-another-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        }
+
+        .analyze-another-btn:active {
+            transform: translateY(-1px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @media (max-width: 1024px) {
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+
+            .download-summary {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 GitHub Repository Stats</h1>
+            <p>Complete repository analytics with releases, downloads & more</p>
+            <div class="rate-limit-info" id="rateLimitInfo" style="display: none;">
+                <span id="rateLimitText">API Calls: --/60</span>
+                <span id="rateLimitReset" style="margin-left: 15px; font-size: 13px; opacity: 0.9;">Resets: --</span>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <div class="input-group">
+                <input type="text" id="repoUrl" placeholder="Enter owner/repo or just owner (e.g., microsoft)" />
+                <button onclick="fetchRepoStats()" id="fetchBtn">Analyze</button>
+                <button onclick="refreshStats()" id="refreshBtn">🔄 Refresh</button>
+            </div>
+            <div class="info-text">
+                ℹ️ Enter owner/repo (e.g., microsoft/typescript) or just owner (e.g., microsoft) to browse repositories. Works with public repositories only. Rate limit: 60 requests/hour.
+            </div>
+            <div class="repo-dropdown-container" id="repoDropdownContainer" style="display: none;">
+                <label for="repoSelect" style="font-weight: 600; margin-bottom: 8px; display: block;">
+                    📦 Select Repository:
+                </label>
+                <select id="repoSelect" class="repo-select" onchange="selectRepo()">
+                    <option value="">-- Select a repository --</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            Fetching comprehensive repository data...
+        </div>
+
+        <div class="stats-container" id="statsContainer">
+            <div class="repo-header" id="repoHeader"></div>
+            
+            <h2 class="section-title">📈 Core Statistics</h2>
+            <div class="stats-grid" id="statsGrid"></div>
+            
+            <div id="releasesSection"></div>
+            
+            <h2 class="section-title">📊 Visual Analytics</h2>
+            <div class="charts-row">
+                <div class="chart-container chart-container-small">
+                    <h3 class="chart-title">💾 Language Distribution</h3>
+                    <canvas id="languageChart" style="max-height: 300px;"></canvas>
+                </div>
+                <div class="chart-container chart-container-small">
+                    <h3 class="chart-title">📦 Downloads by Release</h3>
+                    <canvas id="downloadsChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3 class="chart-title">📅 Release Timeline</h3>
+                <canvas id="timelineChart" style="max-height: 250px;"></canvas>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Copyright © 2025-present tinyBigGAMES™ LLC</p>
+            <p>All Rights Reserved.</p>
+            <p><a href="https://tinybiggames.com" target="_blank">tinyBigGAMES</a> | <a href="https://github.com/tinyBigGAMES/repo-status" target="_blank">GitHub</a></p>
+        </div>
+
+        <button class="analyze-another-btn" id="analyzeAnotherBtn" onclick="location.reload()">🔍 Analyze Another</button>
+    </div>
+
+    <script>
+        let languageChart = null;
+        let downloadsChart = null;
+        let timelineChart = null;
+        let currentRepoUrl = null;
+
+        // Cache configuration
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+        // Rate limit checking
+        async function checkRateLimit() {
+            try {
+                const response = await fetch('https://api.github.com/rate_limit');
+                const data = await response.json();
+                
+                const remaining = data.rate.remaining;
+                const limit = data.rate.limit;
+                const resetTime = new Date(data.rate.reset * 1000);
+                
+                updateRateLimitUI(remaining, limit, resetTime);
+                
+                return data.rate;
+            } catch (error) {
+                console.error('Failed to check rate limit:', error);
+                return null;
+            }
+        }
+
+        function updateRateLimitUI(remaining, limit, resetTime) {
+            const infoDiv = document.getElementById('rateLimitInfo');
+            const textSpan = document.getElementById('rateLimitText');
+            
+            textSpan.textContent = `API Calls: ${remaining}/${limit}`;
+            
+            // Color coding
+            infoDiv.classList.remove('rate-limit-warning', 'rate-limit-danger');
+            if (remaining < 10) {
+                infoDiv.classList.add('rate-limit-danger');
+            } else if (remaining < 20) {
+                infoDiv.classList.add('rate-limit-warning');
+            }
+            
+            infoDiv.style.display = 'inline-block';
+            
+            // Store reset time globally
+            window.rateLimitReset = resetTime;
+        }
+
+        function updateResetTimer() {
+            if (!window.rateLimitReset) return;
+            
+            const now = new Date();
+            const resetTime = window.rateLimitReset;
+            const diff = resetTime - now;
+            
+            if (diff <= 0) {
+                document.getElementById('rateLimitReset').textContent = 'Resets: Now!';
+                // Refresh rate limit
+                checkRateLimit();
+                return;
+            }
+            
+            const minutes = Math.floor(diff / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            
+            document.getElementById('rateLimitReset').textContent = 
+                `Resets: ${minutes}m ${seconds}s`;
+        }
+
+        // Cache management functions
+        function getCacheKey(owner, repo) {
+            return `repo_cache_${owner}_${repo}`;
+        }
+
+        function saveToCache(owner, repo, data) {
+            const cacheKey = getCacheKey(owner, repo);
+            const cacheData = {
+                data: data,
+                timestamp: Date.now()
+            };
+            
+            try {
+                localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+            } catch (error) {
+                console.error('Failed to save to cache:', error);
+            }
+        }
+
+        function getFromCache(owner, repo) {
+            const cacheKey = getCacheKey(owner, repo);
+            
+            try {
+                const cached = localStorage.getItem(cacheKey);
+                if (!cached) return null;
+                
+                const cacheData = JSON.parse(cached);
+                const age = Date.now() - cacheData.timestamp;
+                
+                // Check if cache is still valid
+                if (age < CACHE_DURATION) {
+                    return cacheData.data;
+                } else {
+                    // Expired - remove it
+                    localStorage.removeItem(cacheKey);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Failed to read from cache:', error);
+                return null;
+            }
+        }
+
+        function clearOldCache() {
+            // Clear cache older than 1 hour
+            const keys = Object.keys(localStorage);
+            const maxAge = 60 * 60 * 1000; // 1 hour
+            
+            keys.forEach(key => {
+                if (key.startsWith('repo_cache_')) {
+                    try {
+                        const cached = JSON.parse(localStorage.getItem(key));
+                        const age = Date.now() - cached.timestamp;
+                        
+                        if (age > maxAge) {
+                            localStorage.removeItem(key);
+                        }
+                    } catch (error) {
+                        // Invalid cache entry, remove it
+                        localStorage.removeItem(key);
+                    }
+                }
+            });
+        }
+
+        function showCacheIndicator() {
+            // Add cache indicator to repo title
+            const repoTitle = document.querySelector('.repo-title');
+            if (repoTitle) {
+                const indicator = document.createElement('span');
+                indicator.className = 'cache-indicator';
+                indicator.id = 'cacheIndicator';
+                indicator.textContent = '💾 Cached (5min fresh)';
+                repoTitle.appendChild(indicator);
+                
+                setTimeout(() => {
+                    const ind = document.getElementById('cacheIndicator');
+                    if (ind) ind.remove();
+                }, 5000);
+            }
+        }
+
+        function parseGitHubUrl(url) {
+            // Handle simple owner/repo format
+            const simpleFormat = /^([^\/\s]+)\/([^\/\s]+)$/;
+            const simpleMatch = url.match(simpleFormat);
+            if (simpleMatch) {
+                return {
+                    owner: simpleMatch[1],
+                    repo: simpleMatch[2].replace('.git', ''),
+                    type: 'full'
+                };
+            }
+            
+            // Handle full GitHub URL format (backward compatibility)
+            const urlFormat = /github\.com\/([^\/]+)\/([^\/]+)/;
+            const urlMatch = url.match(urlFormat);
+            if (urlMatch) {
+                return {
+                    owner: urlMatch[1],
+                    repo: urlMatch[2].replace('.git', ''),
+                    type: 'full'
+                };
+            }
+            
+            // Handle owner-only format (new)
+            const ownerFormat = /^([^\/\s]+)$/;
+            const ownerMatch = url.match(ownerFormat);
+            if (ownerMatch) {
+                return {
+                    owner: ownerMatch[1],
+                    type: 'owner-only'
+                };
+            }
+            
+            return null;
+        }
+
+        async function fetchOwnerRepos(owner) {
+            try {
+                // Try as user first
+                let response = await fetch(`https://api.github.com/users/${owner}/repos?per_page=100&sort=stars&direction=desc`);
+                
+                // If not found as user, try as organization
+                if (!response.ok && response.status === 404) {
+                    response = await fetch(`https://api.github.com/orgs/${owner}/repos?per_page=100&sort=stars&direction=desc`);
+                }
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error(`Owner "${owner}" not found. Please check the username/organization name.`);
+                    } else if (response.status === 403) {
+                        throw new Error('Rate limit exceeded. Please try again later.');
+                    }
+                    throw new Error('Failed to fetch repositories');
+                }
+                
+                const repos = await response.json();
+                
+                if (repos.length === 0) {
+                    throw new Error(`Owner "${owner}" has no public repositories.`);
+                }
+                
+                // Check rate limit after fetching
+                checkRateLimit();
+                
+                return repos;
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        function displayRepoDropdown(owner, repos) {
+            const dropdown = document.getElementById('repoSelect');
+            const container = document.getElementById('repoDropdownContainer');
+            
+            // Clear existing options
+            dropdown.innerHTML = '<option value="">-- Select a repository --</option>';
+            
+            // Populate dropdown with repos
+            repos.forEach(repo => {
+                const option = document.createElement('option');
+                option.value = `${owner}/${repo.name}`;
+                option.textContent = `${repo.name} ⭐ ${formatNumber(repo.stargazers_count)} ${repo.description ? '- ' + truncateText(repo.description, 50) : ''}`;
+                dropdown.appendChild(option);
+            });
+            
+            // Show dropdown
+            container.style.display = 'block';
+            
+            // Store owner for later use
+            window.currentOwner = owner;
+        }
+
+        function selectRepo() {
+            const dropdown = document.getElementById('repoSelect');
+            const selectedValue = dropdown.value;
+            
+            if (selectedValue) {
+                // Set the input value to selected repo
+                document.getElementById('repoUrl').value = selectedValue;
+                
+                // Hide dropdown
+                document.getElementById('repoDropdownContainer').style.display = 'none';
+                
+                // Fetch stats for selected repo
+                fetchRepoStats();
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        function formatBytes(bytes) {
+            if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
+            if (bytes >= 1048576) return (bytes / 1048576).toFixed(2) + ' MB';
+            if (bytes >= 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            return bytes + ' bytes';
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatShortDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        async function fetchRepoStats() {
+            const repoUrl = document.getElementById('repoUrl').value.trim();
+            
+            if (!repoUrl) {
+                showError('Please enter a GitHub repository URL');
+                return;
+            }
+
+            const parsed = parseGitHubUrl(repoUrl);
+            if (!parsed) {
+                showError('Invalid format. Please use: owner/repo (e.g., microsoft/typescript) or just owner (e.g., microsoft)');
+                return;
+            }
+
+            // Handle owner-only input
+            if (parsed.type === 'owner-only') {
+                const loading = document.getElementById('loading');
+                const fetchBtn = document.getElementById('fetchBtn');
+                
+                loading.style.display = 'block';
+                fetchBtn.disabled = true;
+                
+                try {
+                    const repos = await fetchOwnerRepos(parsed.owner);
+                    displayRepoDropdown(parsed.owner, repos);
+                } catch (error) {
+                    showError(error.message);
+                } finally {
+                    loading.style.display = 'none';
+                    fetchBtn.disabled = false;
+                }
+                return;
+            }
+
+            // Store current URL for refresh functionality
+            currentRepoUrl = repoUrl;
+
+            // Hide dropdown if it was visible
+            document.getElementById('repoDropdownContainer').style.display = 'none';
+
+            const { owner, repo } = parsed;
+            
+            // Check cache first
+            const cachedData = getFromCache(owner, repo);
+            if (cachedData) {
+                displayRepoStats(
+                    cachedData.repoData,
+                    cachedData.languageData,
+                    cachedData.contributorCount,
+                    cachedData.releasesData,
+                    cachedData.branchCount,
+                    cachedData.prCount,
+                    cachedData.commitCount
+                );
+                
+                // Show cache indicator
+                showCacheIndicator();
+                
+                // Show buttons
+                showRefreshButton();
+                showAnalyzeAnotherButton();
+                
+                // Still check rate limit
+                checkRateLimit();
+                
+                return;
+            }
+            
+            const loading = document.getElementById('loading');
+            const statsContainer = document.getElementById('statsContainer');
+            const fetchBtn = document.getElementById('fetchBtn');
+
+            loading.style.display = 'block';
+            statsContainer.style.display = 'none';
+            fetchBtn.disabled = true;
+            document.getElementById('refreshBtn').disabled = true;
+            hideAnalyzeAnotherButton();
+
+            try {
+                // Fetch repository data
+                const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+                
+                if (!repoResponse.ok) {
+                    if (repoResponse.status === 404) {
+                        throw new Error('Repository not found. Make sure it\'s a public repository.');
+                    } else if (repoResponse.status === 403) {
+                        throw new Error('Rate limit exceeded. Please try again later.');
+                    }
+                    throw new Error('Failed to fetch repository data');
+                }
+
+                const repoData = await repoResponse.json();
+
+                // Fetch language data
+                const langResponse = await fetch(repoData.languages_url);
+                const languageData = await langResponse.json();
+
+                // Fetch contributor count
+                const contributorsResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/contributors?per_page=1`);
+                const contributorsLink = contributorsResponse.headers.get('Link');
+                let contributorCount = 1;
+                if (contributorsLink) {
+                    const match = contributorsLink.match(/page=(\d+)>; rel="last"/);
+                    if (match) contributorCount = parseInt(match[1]);
+                }
+
+                // Fetch releases data
+                const releasesResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`);
+                let releasesData = [];
+                if (releasesResponse.ok) {
+                    releasesData = await releasesResponse.json();
+                }
+
+                // Fetch branches count
+                const branchesResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches?per_page=1`);
+                const branchesLink = branchesResponse.headers.get('Link');
+                let branchCount = 1;
+                if (branchesLink) {
+                    const match = branchesLink.match(/page=(\d+)>; rel="last"/);
+                    if (match) branchCount = parseInt(match[1]);
+                }
+
+                // Fetch pull requests count
+                const prsResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls?state=all&per_page=1`);
+                const prsLink = prsResponse.headers.get('Link');
+                let prCount = 0;
+                if (prsLink) {
+                    const match = prsLink.match(/page=(\d+)>; rel="last"/);
+                    if (match) prCount = parseInt(match[1]);
+                }
+
+                // Fetch commits count
+                const commitsResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=1`);
+                const commitsLink = commitsResponse.headers.get('Link');
+                let commitCount = 1;
+                if (commitsLink) {
+                    const match = commitsLink.match(/page=(\d+)>; rel="last"/);
+                    if (match) commitCount = parseInt(match[1]);
+                }
+
+                // Save to cache
+                saveToCache(owner, repo, {
+                    repoData: repoData,
+                    languageData: languageData,
+                    contributorCount: contributorCount,
+                    releasesData: releasesData,
+                    branchCount: branchCount,
+                    prCount: prCount,
+                    commitCount: commitCount
+                });
+
+                displayRepoStats(repoData, languageData, contributorCount, releasesData, branchCount, prCount, commitCount);
+                
+                // Check rate limit after fetching
+                checkRateLimit();
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loading.style.display = 'none';
+                fetchBtn.disabled = false;
+                document.getElementById('refreshBtn').disabled = false;
+            }
+        }
+
+        function displayRepoStats(repo, languages, contributorCount, releases, branchCount, prCount, commitCount) {
+            // Display repo header
+            const repoHeader = document.getElementById('repoHeader');
+            
+            let headerHTML = `
+                <div class="repo-title">
+                    <span>📦</span>
+                    <a href="${repo.html_url}" target="_blank">${repo.full_name}</a>
+                </div>
+                <div class="repo-description">${repo.description || 'No description available'}</div>
+                <div class="repo-meta">
+                    ${repo.language ? `<span class="badge badge-language">${repo.language}</span>` : ''}
+                    ${repo.license ? `<span class="badge badge-license">${repo.license.name}</span>` : ''}
+                    ${repo.archived ? `<span class="badge badge-warning">Archived</span>` : ''}
+                    <span>📅 Created: ${formatDate(repo.created_at)}</span>
+                    <span>🔄 Updated: ${formatDate(repo.updated_at)}</span>
+                    ${repo.pushed_at ? `<span>📤 Pushed: ${formatDate(repo.pushed_at)}</span>` : ''}
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-icon">🌿</span>
+                        <span>Default Branch: <strong>${repo.default_branch}</strong></span>
+                    </div>
+                    ${repo.homepage ? `
+                    <div class="info-item">
+                        <span class="info-icon">🌐</span>
+                        <span><a href="${repo.homepage}" target="_blank">Homepage</a></span>
+                    </div>` : ''}
+                    <div class="info-item">
+                        <span class="info-icon">${repo.has_wiki ? '✅' : '❌'}</span>
+                        <span>Wiki ${repo.has_wiki ? 'Enabled' : 'Disabled'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-icon">${repo.has_pages ? '✅' : '❌'}</span>
+                        <span>GitHub Pages ${repo.has_pages ? 'Enabled' : 'Disabled'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-icon">${repo.has_projects ? '✅' : '❌'}</span>
+                        <span>Projects ${repo.has_projects ? 'Enabled' : 'Disabled'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-icon">${repo.has_discussions ? '✅' : '❌'}</span>
+                        <span>Discussions ${repo.has_discussions ? 'Enabled' : 'Disabled'}</span>
+                    </div>
+                </div>
+            `;
+
+            // Add topics if available
+            if (repo.topics && repo.topics.length > 0) {
+                headerHTML += `
+                    <div class="topics-container">
+                        ${repo.topics.map(topic => `<span class="topic-tag">${topic}</span>`).join('')}
+                    </div>
+                `;
+            }
+
+            repoHeader.innerHTML = headerHTML;
+
+            // Calculate total downloads and per-release stats
+            let totalDownloads = 0;
+            const releaseStats = releases.map(release => {
+                const downloads = release.assets ? 
+                    release.assets.reduce((sum, asset) => sum + (asset.download_count || 0), 0) : 0;
+                totalDownloads += downloads;
+                return {
+                    name: release.name || release.tag_name,
+                    tag: release.tag_name,
+                    downloads: downloads,
+                    date: release.published_at,
+                    release: release
+                };
+            });
+
+            // Display stats grid
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-value">${formatNumber(repo.stargazers_count)}</div>
+                    <div class="stat-label">Stars</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🍴</div>
+                    <div class="stat-value">${formatNumber(repo.forks_count)}</div>
+                    <div class="stat-label">Forks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👀</div>
+                    <div class="stat-value">${formatNumber(repo.watchers_count)}</div>
+                    <div class="stat-label">Watchers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🐛</div>
+                    <div class="stat-value">${formatNumber(repo.open_issues_count)}</div>
+                    <div class="stat-label">Open Issues</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-value">${formatNumber(contributorCount)}</div>
+                    <div class="stat-label">Contributors</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-value">${formatNumber(repo.size)}</div>
+                    <div class="stat-label">Size (KB)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🌿</div>
+                    <div class="stat-value">${formatNumber(branchCount)}</div>
+                    <div class="stat-label">Branches</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔀</div>
+                    <div class="stat-value">${formatNumber(prCount)}</div>
+                    <div class="stat-label">Pull Requests</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-value">${formatNumber(commitCount)}</div>
+                    <div class="stat-label">Commits</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔗</div>
+                    <div class="stat-value">${formatNumber(repo.network_count)}</div>
+                    <div class="stat-label">Network</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📬</div>
+                    <div class="stat-value">${formatNumber(repo.subscribers_count)}</div>
+                    <div class="stat-label">Subscribers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🚀</div>
+                    <div class="stat-value">${formatNumber(releases.length)}</div>
+                    <div class="stat-label">Releases</div>
+                </div>
+            `;
+
+            // Display releases section
+            displayReleases(releases, totalDownloads, releaseStats);
+
+            // Display charts
+            displayLanguageChart(languages);
+            displayDownloadsChart(releaseStats);
+            displayTimelineChart(releaseStats);
+
+            // Show stats container
+            document.getElementById('statsContainer').style.display = 'block';
+            
+            // Show refresh and analyze another buttons
+            showRefreshButton();
+            showAnalyzeAnotherButton();
+        }
+
+        function displayReleases(releases, totalDownloads, releaseStats) {
+            const releasesSection = document.getElementById('releasesSection');
+            
+            if (releases.length === 0) {
+                releasesSection.innerHTML = '';
+                return;
+            }
+
+            // Calculate average and highest downloads
+            const avgDownloads = releaseStats.length > 0 ? Math.round(totalDownloads / releaseStats.length) : 0;
+            const maxDownloads = releaseStats.length > 0 ? Math.max(...releaseStats.map(r => r.downloads)) : 0;
+
+            let releasesHTML = `
+                <h2 class="section-title">🚀 Releases & Downloads</h2>
+                <div class="releases-container">
+                    <div class="download-summary">
+                        <div class="download-card">
+                            <div class="download-card-value">${formatNumber(totalDownloads)}</div>
+                            <div class="download-card-label">Total Downloads</div>
+                        </div>
+                        <div class="download-card">
+                            <div class="download-card-value">${formatNumber(avgDownloads)}</div>
+                            <div class="download-card-label">Avg per Release</div>
+                        </div>
+                        <div class="download-card">
+                            <div class="download-card-value">${formatNumber(maxDownloads)}</div>
+                            <div class="download-card-label">Highest Release</div>
+                        </div>
+                    </div>
+                    
+                    <div class="release-selector">
+                        <label for="releaseDropdown">📦 Select Release:</label>
+                        <select id="releaseDropdown" onchange="changeRelease()">
+                            ${releaseStats.map((stat, index) => `
+                                <option value="${index}">${stat.name} - ${stat.downloads.toLocaleString()} downloads</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="release-display" id="releaseDisplay">
+                        <!-- Release details will be populated here -->
+                    </div>
+                </div>
+            `;
+
+            releasesSection.innerHTML = releasesHTML;
+            
+            // Store release stats globally for dropdown functionality
+            window.currentReleaseStats = releaseStats;
+            
+            // Display the first (most recent) release by default
+            displaySelectedRelease(0);
+        }
+
+        function changeRelease() {
+            const dropdown = document.getElementById('releaseDropdown');
+            const selectedIndex = parseInt(dropdown.value);
+            displaySelectedRelease(selectedIndex);
+        }
+
+        function displaySelectedRelease(index) {
+            const stat = window.currentReleaseStats[index];
+            const release = stat.release;
+            
+            let releaseHTML = `
+                <div class="release-display-header">
+                    <div class="release-display-title">
+                        ${stat.name}
+                        ${release.prerelease ? '<span class="release-prerelease">Pre-release</span>' : ''}
+                        ${release.draft ? '<span class="release-prerelease">Draft</span>' : ''}
+                    </div>
+                    <div class="release-display-meta">
+                        <span class="release-tag">${stat.tag}</span>
+                        <span class="release-downloads-badge">⬇️ ${stat.downloads.toLocaleString()} total downloads</span>
+                        <span style="color: #666;">📅 ${formatDateTime(release.published_at)}</span>
+                        ${release.author ? `<span style="color: #666;">👤 ${release.author.login}</span>` : ''}
+                    </div>
+                </div>
+                
+                ${release.body ? `
+                <div class="release-body" style="margin-bottom: 20px;">
+                    <strong>📝 Release Notes:</strong><br/>
+                    ${release.body.substring(0, 500)}${release.body.length > 500 ? '...' : ''}
+                </div>
+                ` : ''}
+                
+                ${release.assets && release.assets.length > 0 ? `
+                <div class="release-assets">
+                    <strong>📦 Assets (${release.assets.length}):</strong>
+                    <div style="margin-top: 15px;">
+                        ${release.assets.map(asset => `
+                            <a href="${asset.browser_download_url}" download class="asset-item" style="text-decoration: none; color: inherit;">
+                                <span class="asset-name">
+                                    💾 ${asset.name} 
+                                    <span style="color: #999; font-size: 11px;">(${formatBytes(asset.size)})</span>
+                                </span>
+                                <span class="asset-downloads">
+                                    ⬇️ ${formatNumber(asset.download_count)}
+                                </span>
+                            </a>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : '<p style="color: #999;">No assets available for this release.</p>'}
+            `;
+            
+            document.getElementById('releaseDisplay').innerHTML = releaseHTML;
+        }
+
+        function displayLanguageChart(languages) {
+            const ctx = document.getElementById('languageChart').getContext('2d');
+            
+            if (languageChart) {
+                languageChart.destroy();
+            }
+
+            if (Object.keys(languages).length === 0) {
+                ctx.canvas.parentElement.innerHTML = '<p style="text-align: center; color: #666;">No language data available</p>';
+                return;
+            }
+
+            const sortedLanguages = Object.entries(languages)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8);
+
+            const labels = sortedLanguages.map(l => l[0]);
+            const data = sortedLanguages.map(l => l[1]);
+            
+            const total = data.reduce((a, b) => a + b, 0);
+            const percentages = data.map(d => ((d / total) * 100).toFixed(1));
+
+            const colors = [
+                '#667eea', '#764ba2', '#f093fb', '#4facfe',
+                '#43e97b', '#fa709a', '#fee140', '#30cfd0'
+            ];
+
+            languageChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 10,
+                                font: {
+                                    size: 11
+                                },
+                                generateLabels: function(chart) {
+                                    const data = chart.data;
+                                    return data.labels.map((label, i) => ({
+                                        text: `${label}: ${percentages[i]}%`,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    }));
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${percentages[context.dataIndex]}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function displayDownloadsChart(releaseStats) {
+            const ctx = document.getElementById('downloadsChart').getContext('2d');
+            
+            if (downloadsChart) {
+                downloadsChart.destroy();
+            }
+
+            if (releaseStats.length === 0) {
+                ctx.canvas.parentElement.innerHTML = '<p style="text-align: center; color: #666;">No download data available</p>';
+                return;
+            }
+
+            // Show top 10 releases by downloads
+            const topReleases = [...releaseStats]
+                .sort((a, b) => b.downloads - a.downloads)
+                .slice(0, 10);
+
+            const labels = topReleases.map(r => r.tag);
+            const data = topReleases.map(r => r.downloads);
+
+            downloadsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Downloads',
+                        data: data,
+                        backgroundColor: '#28a745',
+                        borderColor: '#1e7e34',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.parsed.x.toLocaleString()} downloads`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatNumber(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function displayTimelineChart(releaseStats) {
+            const ctx = document.getElementById('timelineChart').getContext('2d');
+            
+            if (timelineChart) {
+                timelineChart.destroy();
+            }
+
+            if (releaseStats.length === 0) {
+                ctx.canvas.parentElement.innerHTML = '<p style="text-align: center; color: #666;">No release data available</p>';
+                return;
+            }
+
+            // Sort by date
+            const sortedReleases = [...releaseStats].sort((a, b) => 
+                new Date(a.date) - new Date(b.date)
+            );
+
+            const labels = sortedReleases.map(r => formatShortDate(r.date));
+            const data = sortedReleases.map((r, i) => i + 1); // Cumulative count
+
+            timelineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Cumulative Releases',
+                        data: data,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    return sortedReleases[context[0].dataIndex].tag;
+                                },
+                                label: function(context) {
+                                    return `Release #${context.parsed.y} - ${context.label}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function refreshStats() {
+            if (currentRepoUrl) {
+                fetchRepoStats();
+            }
+        }
+
+        function showRefreshButton() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            refreshBtn.style.display = 'block';
+        }
+
+        function hideRefreshButton() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            refreshBtn.style.display = 'none';
+        }
+
+        function showAnalyzeAnotherButton() {
+            const btn = document.getElementById('analyzeAnotherBtn');
+            btn.style.display = 'block';
+        }
+
+        function hideAnalyzeAnotherButton() {
+            const btn = document.getElementById('analyzeAnotherBtn');
+            btn.style.display = 'none';
+        }
+
+        // Handle input changes - reset UI when user edits the repo URL
+        function handleInputChange() {
+            const currentInput = document.getElementById('repoUrl').value.trim();
+            
+            // If input differs from stored URL, reset to initial state
+            if (currentInput !== currentRepoUrl) {
+                hideRefreshButton();
+                hideAnalyzeAnotherButton();
+                
+                // Hide dropdown if visible
+                document.getElementById('repoDropdownContainer').style.display = 'none';
+                
+                // Hide stats to prevent stale data display
+                document.getElementById('statsContainer').style.display = 'none';
+            }
+        }
+
+        // Initialize
+        clearOldCache();
+        checkRateLimit();
+        
+        // Update timer every second
+        setInterval(updateResetTimer, 1000);
+
+        // Add input change listener
+        document.getElementById('repoUrl').addEventListener('input', handleInputChange);
+
+        // Allow Enter key to trigger search
+        document.getElementById('repoUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                fetchRepoStats();
+            }
+        });
+    </script>
+</body>
+</html>
