@@ -10,6 +10,11 @@
 
 This tool goes beyond basic repository information to provide deep insights into repository health, popularity, release management, and download analytics - all through an elegant, responsive interface.
 
+## 📸 Screenshot
+
+![Application Interface](media/screen01.png)
+*GitHub Repository Stats displaying comprehensive analytics for a repository*
+
 ## ✨ Key Features
 
 ### 📈 **Comprehensive Statistics**
