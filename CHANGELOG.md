@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Repo Update** (2025-10-15 – jarroddavis68)
+  - Added screenshot
+
 - **Create FUNDING.yml** (2025-10-15 – Jarrod Davis)
 
 
